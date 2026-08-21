@@ -18,30 +18,41 @@ void remove_quotes(char * line){
 }
 
 int main(int argc, char *argv[]){
-    char way[100] = {};
+    char buffer[100] = {};
+    char * path = NULL;
     if (argc < 2){
         printf("Enter the way to the file with test inputs (can be with quotes):    ");
-        if (scanf("%99s", way) != 1) {
+        if (scanf("%99s", buffer) != 1) {
             printf("Error reading input.\n");
             return 1;
         }
+        
+        remove_quotes(buffer);
+        path = buffer;
     }
+
+    else{
+        remove_quotes(argv[1]);
+        path = argv[1];
+
+    }
+
     double x1 = 0;
     double x2 = 0;
-
     double a = 0;
     double b = 0;
     double c = 0;
     double result_for_x1 = 0;
     double result_for_x2 = 0;
-    //argc argv;
-    remove_quotes(way);
-    printf("%s\n", way);
-    FILE *testfile = fopen(way, "r");
+    remove_quotes(path);
+    printf("%s", path);
+    FILE *testfile = fopen(path, "r");
+
     if (testfile == NULL) {
             printf("Problem to open file with tests\n");
             return 1;
         }
+
     FILE *logfile = fopen("C:\\Users\\ArtemiiNikPT\\Desktop\\log.txt", "w");
         if (logfile == NULL) {
             printf("Problem to create log file");
@@ -64,6 +75,7 @@ int main(int argc, char *argv[]){
             
         } 
     }
+
     fclose(logfile);
     fclose(testfile);
     return 1;
