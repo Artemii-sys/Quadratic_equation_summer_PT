@@ -4,14 +4,28 @@
 #include <string.h>
 #include "roots.h"
 
+
+void remove_quotes(char * line){
+    int write_index = 0;
+    for (int current_index = 0; line[current_index] != '\0'; current_index++){
+        if (line[current_index] != '"'){
+            line[write_index] = line[current_index];
+            write_index++;
+        }
+
+    }
+    line[write_index] = '\0';
+}
+
 int main(int argc, char *argv[]){
     char way[100] = {};
     if (argc < 2){
-        printf("Enter the way to the file with test inputs");
+        printf("Enter the way to the file with test inputs (can be with quotes):    ");
         if (scanf("%99s", way) != 1) {
             printf("Error reading input.\n");
             return 1;
         }
+    }
     double x1 = 0;
     double x2 = 0;
 
@@ -20,13 +34,17 @@ int main(int argc, char *argv[]){
     double c = 0;
     double result_for_x1 = 0;
     double result_for_x2 = 0;
-    //argc argv
-    printf("Введите путь до файла с тестовыми задачами:   ");
-
+    //argc argv;
+    remove_quotes(way);
+    printf("%s\n", way);
     FILE *testfile = fopen(way, "r");
-
+    if (testfile == NULL) {
+            printf("Problem to open file with tests\n");
+            return 1;
+        }
     FILE *logfile = fopen("C:\\Users\\ArtemiiNikPT\\Desktop\\log.txt", "w");
         if (logfile == NULL) {
+            printf("Problem to create log file");
             return 1;
         }
 
@@ -48,4 +66,5 @@ int main(int argc, char *argv[]){
     }
     fclose(logfile);
     fclose(testfile);
+    return 1;
 }
