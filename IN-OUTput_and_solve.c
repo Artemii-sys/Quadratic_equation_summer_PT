@@ -74,10 +74,6 @@ int main(void) {
         
     }
     show_result(n_of_roots, x1, x2);
-    while(getchar() != '\n'){    
-    }
-    while(getchar() == '\n'){    
-    }
     return 0;
 }
 

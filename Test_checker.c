@@ -4,7 +4,14 @@
 #include <string.h>
 #include "roots.h"
 
-int main(void){
+int main(int argc, char *argv[]){
+    char way[100] = {};
+    if (argc < 2){
+        printf("Enter the way to the file with test inputs");
+        if (scanf("%99s", way) != 1) {
+            printf("Error reading input.\n");
+            return 1;
+        }
     double x1 = 0;
     double x2 = 0;
 
@@ -13,8 +20,10 @@ int main(void){
     double c = 0;
     double result_for_x1 = 0;
     double result_for_x2 = 0;
+    //argc argv
+    printf("Введите путь до файла с тестовыми задачами:   ");
 
-    FILE *testfile = fopen("C:\\Users\\ArtemiiNikPT\\Desktop\\quadratic_equations.txt", "r");
+    FILE *testfile = fopen(way, "r");
 
     FILE *logfile = fopen("C:\\Users\\ArtemiiNikPT\\Desktop\\log.txt", "w");
         if (logfile == NULL) {

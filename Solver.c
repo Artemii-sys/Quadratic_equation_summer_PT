@@ -1,9 +1,14 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "roots.h"
+
+#define my_assert(expression) do\
+ { if (!expression) abort();} \
+ while(0)
 
 const double EPS = 1e-9;
 
-
+//условная комплияция, assert не должен работать если включён флаг компиляции -DNDEBUG
 int is_equal(double first_number,double second_number ){
     if (fabs(first_number - second_number) <= EPS){
         return 1;
@@ -34,7 +39,7 @@ int solve_linear_equation(double a, double b, double *x1){
         return solve_for_constant(b);
     }
     else{
-        *x1 = -a / b;
+        *x1 = -b / a;
         return ONE_ROOT;
     }
 }
@@ -60,6 +65,10 @@ int solve_discriminant(double a, double b, double c,  double *x1, double *x2){
 
 
 int solve_quadratic(double a, double b, double c, double *x1, double *x2){
+    my_assert(x1 != 0);
+    my_assert(x2 != 0);
+
+
     if (is_zero(a)){
         return solve_linear_equation(b,c, x1);
     }
