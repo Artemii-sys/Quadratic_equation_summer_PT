@@ -6,7 +6,7 @@ g++ -I "Headers" ^
     "Codes_for_quardatic\Solver.c" ^
     "Codes_for_quardatic\checker_functions.c" ^
     "Codes_for_quardatic\input_functions.c" ^
-    -o "big_test.exe"
+    -o "Quadratic_solver.exe"
 
 if errorlevel 1 (
     echo Build failed.
@@ -14,4 +14,4 @@ if errorlevel 1 (
     exit /b 1
 )
 
-start "" "%~dp0big_test.exe"
+start "" "%~dp0Quadratic_solver.exe"
