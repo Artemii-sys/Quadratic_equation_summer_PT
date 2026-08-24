@@ -6,6 +6,22 @@
 #include <string.h>
 #include <conio.h>
 
+typedef struct CoefficientsS {
+    double a;
+    double b;
+    double c;
+} COEFFICIENTS;
+
+typedef struct WindowS {
+    double window_width;
+    double window_length;
+    double graph_scale;
+} WINDOW;
+
+typedef struct RootsS {
+    double x1;
+    double x2;
+} ROOTS;
 
 typedef enum DECISIONS{
     NO_DECISION,
@@ -20,11 +36,16 @@ typedef enum DECISIONS_FOR_GRAPH{
 } DECISION_FOR_GRAPH;
 
 void better_print(FILE* resultfile, double a, double b, double c);
-void draw_graph(double a, double b, double c, int window_length, int window_width, double graph_scale);
+void draw_graph(const COEFFICIENTS *coefficients, const WINDOW *window);
 int graph_and_solve_if_multiple(void);
 int solve_if_single(void);
 void draw_cute_small_useless_graph(void);
-
+void what_to_do_for_decision_of_graph(DECISION_FOR_GRAPH decision_for_graph,
+                                      const COEFFICIENTS *coefficients);
+void solve_if_single_input(double *a, double *b, double *c,
+                           int *a_scanf_status,
+                           int *b_scanf_status,
+                           int *c_scanf_status);
 
 static void show_result(NUMBER_OF_ROOTS n_of_roots, double x1, double x2){
     switch(n_of_roots){
@@ -44,7 +65,7 @@ static void show_result(NUMBER_OF_ROOTS n_of_roots, double x1, double x2){
             break;
         
         case ENTER_ERROR:
-            printf("Enter problem. Got not number");
+            printf("Enter problem. Got not number. And please go away. And learn math.");
             break;
         case NO_NUMBER:
             printf("something went wrong while counting number of roots in function \"solve_quadratic\"");
@@ -56,7 +77,16 @@ static void show_result(NUMBER_OF_ROOTS n_of_roots, double x1, double x2){
     }
 }
 
-static void write_result(FILE *resultfile, NUMBER_OF_ROOTS n_of_roots, double x1, double x2, double a, double b, double c){
+static void write_result(FILE *resultfile,
+                         NUMBER_OF_ROOTS n_of_roots,
+                         const COEFFICIENTS *coefficients,
+                         const ROOTS *roots){
+    double a = coefficients->a;
+    double b = coefficients->b;
+    double c = coefficients->c;
+    double x1 = roots->x1;
+    double x2 = roots->x2;
+
     switch(n_of_roots){
         case ZERO_ROOTS:
             better_print(resultfile, a, b, c);
@@ -81,6 +111,7 @@ static void write_result(FILE *resultfile, NUMBER_OF_ROOTS n_of_roots, double x1
         case ENTER_ERROR:
             fprintf(resultfile, "Input error\n");
             break;
+    
         case NO_NUMBER:
             fprintf(resultfile, "something went wrong while counting number of roots in function \"solve_quadratic\"");
             break;
@@ -90,6 +121,10 @@ static void write_result(FILE *resultfile, NUMBER_OF_ROOTS n_of_roots, double x1
             break;
     }
 }
+
+//===============================================================================
+
+/////////////////////////////////////////////////////////////////////////////////
 
 int main(void) {
     char decision = NO_DECISION;
@@ -102,18 +137,20 @@ int main(void) {
 
     clear_input();
 
+    //--------------------------------
 
     if (decision == DECISION_SINGLE) {
         solve_if_single();
     }
         
+    //--------------------------------
 
     else if (decision == DECISION_MULTIPLE) {
         graph_and_solve_if_multiple();
     }
 
     else {
-        printf("Wrong mode. Use 's' or 'm'.\n");
+        printf("Wrong mode. Use 's' or 'm'. Or die.\n");
         program_crash();
     }
 }
@@ -125,25 +162,35 @@ void better_print(FILE* resultfile, double a, double b, double c){
 
 
 
-void draw_graph(double a, double b, double c, int window_length, int window_width, double graph_scale){
+void draw_graph(const COEFFICIENTS *coefficients, const WINDOW *window){
+    double a = coefficients->a;
+    double b = coefficients->b;
+    double c = coefficients->c;
+    double window_height = window->window_length;
+    double window_width = window->window_width;
+    double graph_scale = window->graph_scale;
     double centerX = window_width/2;
-    double centerY = window_length/2;
-    txCreateWindow(window_width, window_length);                           //ВОТ ЗДЕСЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬ
+    double centerY = window_height/2;
+
+    txCreateWindow(window_width, window_height);                           //ВОТ ЗДЕСЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬ
     txSetFillColor(TX_WHITE);
     txClear();
+    
     txSetColor(TX_BLACK, 1);
     txLine(0, centerY, window_width, centerY);
-    txLine(centerX, 0, centerX, window_length);
+    txLine(centerX, 0, centerX, window_height);
 
     for (int screenX = 0; screenX < window_width; screenX++){
         double x = (screenX - centerX) / graph_scale;
         double y = a * x * x + b * x + c;
         double screenY = centerY - (y * graph_scale);
-        if (screenY >= 0 && screenY < window_length){
+        if (screenY >= 0 && screenY < window_height){
             txSetPixel(screenX, screenY, TX_RED);
         }
     }
-    txSleep(60000);
+    
+    //txDisableAutoPause();
+    //txSleep(60000);
 }
 
 int graph_and_solve_if_multiple(void){
@@ -178,7 +225,9 @@ int graph_and_solve_if_multiple(void){
             NUMBER_OF_ROOTS n_of_roots = solve_quadratic(a, b, c, &x1, &x2);
             task_number++;
             fprintf(resultfile, "Task %d:\n", task_number);
-            write_result(resultfile, n_of_roots, x1, x2, a, b, c);
+            COEFFICIENTS coefficients = {a, b, c};
+            ROOTS roots = {x1, x2};
+            write_result(resultfile, n_of_roots, &coefficients, &roots);
             fprintf(resultfile, "\n");
         }
         else {
@@ -198,60 +247,27 @@ int solve_if_single(void){
     double x1 = 0;
     double x2 = 0;
     NUMBER_OF_ROOTS n_of_roots = NO_NUMBER;
-
     printf("enter please a, b, c of Quadratic Equation\nwith type of ax^2 + bx + c = 0\n");
     int a_scanf_status = -1;
-    printf("a = ");
-    a_scanf_status = scanf(" %lf", &a);
-    clear_input();
     int b_scanf_status = -1;
-    printf("b = ");
-    b_scanf_status = scanf(" %lf", &b);
-    clear_input();
     int c_scanf_status = -1;
-    printf("c = ");
-    c_scanf_status = scanf(" %lf", &c);
-    clear_input();
+    //
+    solve_if_single_input(&a, &b, &c, &a_scanf_status, &b_scanf_status, &c_scanf_status);
     if (a_scanf_status + b_scanf_status + c_scanf_status == 3 && isfinite(a) && isfinite(b) && isfinite(c)){
         n_of_roots = solve_quadratic(a, b, c, &x1, &x2);
         show_result(n_of_roots, x1, x2);
-        char decision_for_graph = NO_DECISION_FOR_GRAPH;
+        char decision_for_graph_input = '\0';
         printf(GREEN "Would u like to draw graph in new window?: (y/n) " RESET);
-        if (scanf(" %c", &decision_for_graph) != 1){
+        if (scanf(" %c", &decision_for_graph_input) != 1){
             printf("Input error");
             program_crash();
         }
-
-        switch (decision_for_graph){
-            case YES_FOR_GRAPH:{
-                int window_length = 0;
-                int window_width = 0;
-                draw_cute_small_useless_graph();
-                printf("Enter size of the window length , width (example: 800 600): ");
-                if (scanf("%d %d", &window_length, &window_width) == 2){
-                    double graph_scale = 0;
-                    printf("Enter " YELLOW "graph" RESET " scale: ");
-                    scanf(" %lf", &graph_scale);
-                    isfinite(graph_scale);
-                    draw_graph(a, b, c, window_length, window_width, graph_scale);
-                    break;
-                }
-                else{
-                    printf("Problem in scanning your inputing scales of window");
-                    printf("Program have: length: %d, width: %d", window_length, window_width);
-                    program_crash();
-                }
-            
-            }
-
-            case NO_FOR_GRAPH:{
-                printf("U don`t want to draw graph");
-                break;
-            }
-            default:
-                break;
-        } 
+        DECISION_FOR_GRAPH decision_for_graph = (DECISION_FOR_GRAPH) decision_for_graph_input;
+        COEFFICIENTS coefficients = {a, b, c};
+        what_to_do_for_decision_of_graph(decision_for_graph, &coefficients);
+         
     }
+    //
     else {
         printf("\nInput error.\n");
         printf("Status of taking your inputs\n");
@@ -271,5 +287,61 @@ void draw_cute_small_useless_graph(void){
     printf("|\n");
     printf("|\n");
     printf("v\n");
-    printf("length\n");
+    printf("height\n\n");
+}
+
+
+void what_to_do_for_decision_of_graph(DECISION_FOR_GRAPH decision_for_graph,
+                                      const COEFFICIENTS *coefficients){
+    switch (decision_for_graph){
+        case YES_FOR_GRAPH:{ //выкинуть в функц
+            int window_height = 0; // проверки
+            int window_width = 0;
+            draw_cute_small_useless_graph();
+            printf("Enter size of the window height , width (example: 800 600): ");
+            if (scanf("%d %d", &window_height, &window_width) == 2){
+                double graph_scale = 0;
+                printf("Enter " YELLOW "graph" RESET " scale: ");
+                scanf(" %lf", &graph_scale);
+                if (!isfinite(graph_scale)){
+                    printf("Input Error. Your typed number is INF or NAN");
+                    program_crash();
+                }
+                printf("\n");
+                WINDOW window = {
+                    (double) window_width,
+                    (double) window_height,
+                    graph_scale
+                };
+                draw_graph(coefficients, &window);
+                break;
+            }
+            else{
+                printf("Problem in scanning your inputing scales of window");
+                printf("Program have: height: %d, width: %d", window_height, window_width);
+                program_crash();
+                break;
+            }
+        
+        }
+        case NO_FOR_GRAPH:{
+            printf("U don`t want to draw graph");
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+
+void solve_if_single_input(double *a, double * b, double * c, int* a_scanf_status, int* b_scanf_status, int* c_scanf_status){
+    printf("a = ");
+    *a_scanf_status = scanf(" %lf", a);
+    clear_input();
+    printf("b = ");
+    *b_scanf_status = scanf(" %lf", b);
+    clear_input();
+    printf("c = ");
+    *c_scanf_status = scanf(" %lf", c);
+    clear_input();
 }
