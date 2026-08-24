@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <conio.h>  
+#include <conio.h>
 #include "..\Headers\additional_functions.h"
 
 
@@ -11,6 +11,8 @@ void clear_input(void) {
     while ((ch = getchar()) != '\n' && ch != EOF) {
     }
 }
+
+
 
 void remove_newline(char string[]) {
     for (int i = 0; string[i] != '\0'; i++) {
