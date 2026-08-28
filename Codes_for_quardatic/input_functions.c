@@ -7,7 +7,6 @@
 
 void clear_input(void) {
     int ch = 0;
-
     while ((ch = getchar()) != '\n' && ch != EOF) {
     }
 }

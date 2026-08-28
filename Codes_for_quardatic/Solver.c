@@ -4,6 +4,12 @@
 #include "..\Headers\solver_functions.h"
 #include "..\Headers\additional_functions.h"
 
+#define NDEBUG
+#ifdef NDEBUG
+    #define my_assert(equation) 
+#else
+    #define my_assert(equation) if(equation){printf("smth"); abort();}
+#endif
 
 const double EPS = 1e-9;
 
@@ -52,8 +58,8 @@ static NUMBER_OF_ROOTS solve_discriminant(double a, double b, double c,  double 
 }
 
 NUMBER_OF_ROOTS solve_quadratic(double a, double b, double c, double *x1, double *x2){
-    assert(x1 != NULL);
-    assert(x2 != NULL);
+    my_assert(x1 == NULL);
+    my_assert(x2 == NULL);
 
 
     if (is_zero(a)){
