@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -60,5 +61,6 @@ int main(int argc, char *argv[]){
     printf("Unpassed tests saved into " YELLOW "log.txt" RESET);
     fclose(logfile);
     fclose(testfile);
+    sleep (10);
     return EXIT_SUCCESS;
 }
