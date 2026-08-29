@@ -83,6 +83,8 @@ static void draw_intersections(const COEFFICIENTS *coefficients, const GRAPH_CON
  * @param context Current window and coordinate center.
  */
 static void draw_vertex(const COEFFICIENTS *coefficients, const GRAPH_CONTEXT *context);
+static double calculate_auto_scale(const COEFFICIENTS *coefficients,
+                                   double window_width, double window_height);
 /** @brief Reads equations from a file and writes their answers to result.txt. */
 int graph_and_solve_if_multiple(void);
 /** @brief Reads and solves one equation from the console. */
@@ -223,18 +225,57 @@ void draw_graph(const COEFFICIENTS *coefficients, const WINDOW *window){
     double centerX = window_width/2;
     double centerY = window_height/2;
 
+    WINDOW auto_window = *window;
+    auto_window.graph_scale = calculate_auto_scale(coefficients, window_width, window_height);
+
     txCreateWindow(window_width, window_height);                           //ВОТ ЗДЕСЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬЬ
     txSetFillColor(TX_WHITE);
     txClear();
     
-    GRAPH_CONTEXT context = {*window, centerX, centerY};
+    GRAPH_CONTEXT context = {auto_window, centerX, centerY};
     draw_grid(&context);
     draw_axes(&context);
     draw_axis_marks(&context);
     draw_parabola(coefficients, &context);
     draw_intersections(coefficients, &context);
     draw_vertex(coefficients, &context);
-    
+
+    txBegin();
+    while(!txGetAsyncKeyState (VK_ESCAPE)){
+        bool need_redraw = false;
+        if (txGetAsyncKeyState('W')) {
+            auto_window.graph_scale += 1;
+            need_redraw = true;
+        }
+        if (txGetAsyncKeyState('S')) {
+            auto_window.graph_scale -= 1;
+            if (auto_window.graph_scale < 1){
+                auto_window.graph_scale = 1; 
+            }
+            need_redraw = true;
+        }
+        if (txGetAsyncKeyState('D')){
+            centerX -= 4;
+            need_redraw = true;
+        }
+        if (txGetAsyncKeyState('A')){
+            centerX += 4;
+            need_redraw = true;
+        }
+
+        if (need_redraw){
+            txClear();
+            context = {auto_window, centerX, centerY};
+            draw_grid(&context);
+            draw_axes(&context);
+            draw_axis_marks(&context);
+            draw_parabola(coefficients, &context);
+            draw_intersections(coefficients, &context);
+            draw_vertex(coefficients, &context);
+        }
+        txSleep(5);
+    }
+    txEnd();
     //txDisableAutoPause();
     //txSleep(60000);
 }
@@ -245,14 +286,16 @@ static void draw_grid(const GRAPH_CONTEXT *context) {
     double window_width = context->window.window_width;
     double window_height = context->window.window_length;
     double graph_scale = context->window.graph_scale;
+    double grid_step = fmax(1.0, ceil(25.0 / graph_scale));
+    double pixel_step = grid_step * graph_scale;
     txSetColor(RGB(220, 220, 220), 1);
-    for (int x = (int) centerX; x < window_width; x += (int) graph_scale)
+    for (double x = centerX; x < window_width; x += pixel_step)
         txLine(x, 0, x, window_height);
-    for (int x = (int) centerX; x > 0; x -= (int) graph_scale)
+    for (double x = centerX; x > 0; x -= pixel_step)
         txLine(x, 0, x, window_height);
-    for (int y = (int) centerY; y < window_height; y += (int) graph_scale)
+    for (double y = centerY; y < window_height; y += pixel_step)
         txLine(0, y, window_width, y);
-    for (int y = (int) centerY; y > 0; y -= (int) graph_scale)
+    for (double y = centerY; y > 0; y -= pixel_step)
         txLine(0, y, window_width, y);
 }
 
@@ -272,27 +315,28 @@ static void draw_axis_marks(const GRAPH_CONTEXT *context) {
     double window_width = context->window.window_width;
     double window_height = context->window.window_length;
     double graph_scale = context->window.graph_scale;
+    double mark_step = fmax(1.0, ceil(25.0 / graph_scale));
     char axis_number[32] = {0};
-    int max_x_mark = (int) (window_width / (2 * graph_scale));
-    int max_y_mark = (int) (window_height / (2 * graph_scale));
-    for (int i = 1; i <= max_x_mark; i++){
-        int right_x = (int) centerX + (int) (i * graph_scale);
-        int left_x = (int) centerX - (int) (i * graph_scale);
+    int max_x_mark = (int) (window_width / (2 * mark_step * graph_scale));
+    int max_y_mark = (int) (window_height / (2 * mark_step * graph_scale));
+    for (int i = 1; i <= max_x_mark; i++){ //marks on x
+        int right_x = (int) centerX + (int) (i * mark_step * graph_scale);
+        int left_x  = (int) centerX - (int) (i * mark_step * graph_scale);
         txLine(right_x, centerY - 5, right_x, centerY + 5);
         txLine(left_x, centerY - 5, left_x, centerY + 5);
-        sprintf(axis_number, "%d", i);
+        sprintf(axis_number, "%d", (int) (i * mark_step));
         txTextOut(right_x - 4, centerY + 8, axis_number);
-        sprintf(axis_number, "-%d", i);
+        sprintf(axis_number, "-%d", (int) (i * mark_step));
         txTextOut(left_x - 8, centerY + 8, axis_number);
     }
-    for (int i = 1; i <= max_y_mark; i++){
-        int upper_y = (int) centerY - (int) (i * graph_scale);
-        int lower_y = (int) centerY + (int) (i * graph_scale);
+    for (int i = 1; i <= max_y_mark; i++){ //marks on y
+        int upper_y = (int) centerY - (int) (i * mark_step * graph_scale);
+        int lower_y = (int) centerY + (int) (i * mark_step * graph_scale);
         txLine(centerX - 5, upper_y, centerX + 5, upper_y);
         txLine(centerX - 5, lower_y, centerX + 5, lower_y);
-        sprintf(axis_number, "%d", i);
+        sprintf(axis_number, "%d", (int) (i * mark_step));
         txTextOut(centerX + 8, upper_y - 6, axis_number);
-        sprintf(axis_number, "-%d", i);
+        sprintf(axis_number, "-%d", (int) (i * mark_step));
         txTextOut(centerX + 8, lower_y - 6, axis_number);
     }
     txTextOut((int) window_width - 25, (int) centerY + 10, "X");
@@ -304,12 +348,16 @@ static void draw_parabola(const COEFFICIENTS *coefficients, const GRAPH_CONTEXT 
         double x = (screenX - context->centerX) / context->window.graph_scale;
         double y = coefficients->a * x * x + coefficients->b * x + coefficients->c;
         double screenY = context->centerY - y * context->window.graph_scale;
-        if (screenY >= 0 && screenY < context->window.window_length)
+
+        double x_prev = ((screenX - 1) - context->centerX) / context->window.graph_scale;
+        double previousy = coefficients->a * x_prev * x_prev + coefficients->b * x_prev + coefficients->c;
+        double PreviousScreenY = context->centerY - previousy * context->window.graph_scale;
+
+        if (screenY >= 0 && screenY < context->window.window_length) {
             txSetColor(TX_RED, 3);
-            //txSetFillColor(TX_RED); 
-            //txSetPixel(screenX, screenY, TX_RED);
-            //txRectangle(screenX - 1, screenY - 1, screenX + 1, screenY + 1);
             txCircle(screenX, screenY, 2);
+            txLine(screenX, screenY, screenX - 1, PreviousScreenY);
+        }
     }
 }
 
@@ -369,6 +417,30 @@ static void draw_vertex(const COEFFICIENTS *coefficients,
             txTextOut(screen_x + 8, screen_y - 25, vertex_label);
         }
     }
+}
+
+static double calculate_auto_scale(const COEFFICIENTS *coefficients, double window_width, double window_height) {
+    double max_x = 1;
+    double max_y = fabs(coefficients->c);
+    double x1 = 0;
+    double x2 = 0;
+    NUMBER_OF_ROOTS roots_number = solve_quadratic(
+        coefficients->a, coefficients->b, coefficients->c, &x1, &x2);
+    if (roots_number == ONE_ROOT || roots_number == TWO_ROOTS)
+        max_x = fmax(max_x, fabs(x1));
+    if (roots_number == TWO_ROOTS)
+        max_x = fmax(max_x, fabs(x2));
+    if (!is_zero(coefficients->a)) {
+        double vertex_x = -coefficients->b / (2 * coefficients->a);
+        double vertex_y = coefficients->a * vertex_x * vertex_x + coefficients->b * vertex_x + coefficients->c;
+        max_x = fmax(max_x, fabs(vertex_x));
+        max_y = fmax(max_y, fabs(vertex_y));
+    }
+    max_x += 1;
+    max_y += 1;
+    double scale_x = window_width / (2 * max_x);
+    double scale_y = window_height / (2 * max_y);
+    return fmax(fmin(scale_x, scale_y), 1.0);
 }
 
 int graph_and_solve_if_multiple(void){
@@ -479,13 +551,8 @@ void what_to_do_for_decision_of_graph(DECISION_FOR_GRAPH decision_for_graph,
             draw_cute_small_useless_graph();
             printf("Enter size of the window height , width (example: 800 600): ");
             if (scanf("%d %d", &window_height, &window_width) == 2){
-                double graph_scale = 0;
-                printf("Enter " YELLOW "graph" RESET " scale: ");
-                scanf(" %lf", &graph_scale);
-                if (!isfinite(graph_scale)){
-                    printf("Input Error. Your typed number is INF or NAN");
-                    program_crash();
-                }
+                double graph_scale = calculate_auto_scale(coefficients, window_width, window_height);
+                printf("Automatic graph scale: %.4lf\n", graph_scale);
                 printf("\n");
                 WINDOW window = {
                     (double) window_width,
